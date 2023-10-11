@@ -1,13 +1,12 @@
 package main
 
 import (
-	"crypto/sha256"
-	"crypto/sha512"
+	"context"
 	"fmt"
-	"io"
-	"os"
 
 	"github.com/barasher/go-exiftool"
+	"github.com/luizhreis/file-metadata/filehandler"
+	"github.com/luizhreis/file-metadata/hasher"
 )
 
 func main() {
@@ -33,47 +32,22 @@ func main() {
 		}
 	}
 
-	sha512, err := sha512sum(filePath)
+	fileHandlerService := filehandler.New()
+
+	fileHandler, err := fileHandlerService.OpenFile(context.TODO(), filePath)
+
 	if err != nil {
-		fmt.Printf("Error when calculating sha512: %v\n", err)
-		return
+		panic(err)
 	}
-	fmt.Println("[SHA512] ", sha512)
 
-	sha256, err := sha256sum(filePath)
+	hasherService := hasher.New()
+
+	hashes, err := hasherService.GetHashes(context.TODO(), fileHandler)
 	if err != nil {
-		fmt.Printf("Error when calculating sha256: %v\n", err)
-		return
-	}
-	fmt.Println("[SHA256] ", sha256)
-}
-
-func sha512sum(filePath string) (string, error) {
-	fileHandle, err := os.Open(filePath)
-	if err != nil {
-		return "", err
+		panic(err)
 	}
 
-	defer fileHandle.Close()
+	fmt.Println(hashes)
 
-	sha512 := sha512.New()
-	if _, err := io.Copy(sha512, fileHandle); err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%x", sha512.Sum(nil)), nil
-}
-
-func sha256sum(filePath string) (string, error) {
-	fileHandle, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-
-	defer fileHandle.Close()
-
-	sha256 := sha256.New()
-	if _, err := io.Copy(sha256, fileHandle); err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%x", sha256.Sum(nil)), nil
+	fileHandler.Close()
 }
